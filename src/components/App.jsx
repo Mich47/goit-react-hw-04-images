@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { STATUS } from 'constants/status.constants';
 import { getPosts } from 'services/posts.service';
 import { Searchbar } from './Searchbar';
@@ -6,25 +6,25 @@ import { ImageGallery } from './ImageGallery';
 import { Button } from './Button';
 import { Loader } from './Loader';
 
-export class App extends Component {
-  state = {
-    images: [],
-    page: 1,
-    totalPages: 0,
-    query: '',
-    status: STATUS.idle, // 'idle', 'loading', 'success', 'error',
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState(STATUS.idle); // 'idle', 'loading', 'success', 'error',
+  const firstStart = useRef(true);
+  const totalPages = useRef(0);
 
-  componentDidUpdate(_, prevState) {
-    const { page, query } = this.state;
-    if (prevState.query !== query || prevState.page !== page) {
-      this.fetchData();
+  useEffect(() => {
+    console.log('useEffect ');
+    if (firstStart.current) {
+      firstStart.current = false;
+      return;
     }
-  }
+    fetchData(page, query);
+  }, [page, query]);
 
-  fetchData = async () => {
-    const { page, query } = this.state;
-    this.setState({ status: STATUS.loading });
+  const fetchData = async (page, query) => {
+    setStatus(STATUS.loading);
     // Параметри URI
     const params = {
       q: query,
@@ -48,48 +48,41 @@ export class App extends Component {
       //Наприклад на запит doges, ukr
       //Якщо це сталося, то визначаємо вручну кількість сторінок
       //В іншому випадку беремо значення від бекенду
-      const totalPages =
+      totalPages.current =
         totalHits === total ? Math.ceil(total / perPage) : totalHits;
 
-      this.setState(prevState => ({
-        totalPages,
-        images: [
-          ...prevState.images,
-          ...hits.map(({ id, largeImageURL, tags, webformatURL }) => ({
-            id,
-            largeImageURL,
-            tags,
-            webformatURL,
-          })),
-        ], // Дані додаємо у масив
-        status: STATUS.success,
-      }));
+      setImages(prev => [
+        ...prev,
+        ...hits.map(({ id, largeImageURL, tags, webformatURL }) => ({
+          id,
+          largeImageURL,
+          tags,
+          webformatURL,
+        })),
+      ]); // Дані додаємо у масив
+
+      setStatus(STATUS.success);
     } catch (error) {
       console.log('error ->', error);
-      this.setState({ status: STATUS.error });
+      setStatus(STATUS.error);
     }
   };
 
-  handleSubmitForm = (event, searchImage) => {
+  const handleSubmitForm = (event, searchImage) => {
     event.preventDefault();
-    const { query } = this.state;
     // Якщо пошуковий запит не змінився, нічого не робимо
     if (searchImage === query) return;
 
-    this.setState({
-      images: [],
-      page: 1,
-      query: searchImage,
-    });
+    setImages([]);
+    setPage(1);
+    setQuery(searchImage);
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1);
   };
 
-  handleAutoScrollBottom(status) {
+  const handleAutoScrollBottom = status => {
     if (status === STATUS.success) {
       setTimeout(() => {
         document.body.scrollIntoView({
@@ -98,24 +91,20 @@ export class App extends Component {
         });
       }, 500);
     }
-  }
+  };
 
-  render() {
-    const { images, page, totalPages, status } = this.state;
+  // Авто-прокрутка униз
+  handleAutoScrollBottom(status);
 
-    // Авто-прокрутка униз
-    this.handleAutoScrollBottom(status);
-
-    return (
-      <>
-        {/* status - для того щоб робити кнопку пошуку неактивною */}
-        <Searchbar status={status} onSubmitForm={this.handleSubmitForm} />
-        <ImageGallery images={images} onOpen={this.handleToggleModalForm} />
-        {page < totalPages && status === STATUS.success && (
-          <Button onClick={this.handleLoadMore}>Load more</Button>
-        )}
-        <Loader status={status} />
-      </>
-    );
-  }
-}
+  return (
+    <>
+      {/* status - для того щоб робити кнопку пошуку неактивною */}
+      <Searchbar status={status} onSubmitForm={handleSubmitForm} />
+      <ImageGallery images={images} />
+      {page < totalPages.current && status === STATUS.success && (
+        <Button onClick={handleLoadMore}>Load more</Button>
+      )}
+      <Loader status={status} />
+    </>
+  );
+};

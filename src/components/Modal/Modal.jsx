@@ -1,63 +1,56 @@
 import { PropTypes } from 'prop-types';
-import { Component } from 'react';
+import { useEffect } from 'react';
 import { ModalStyled, OverlayStyled } from './Modal.styled';
 
-export class Modal extends Component {
-  static propTypes = {
-    src: PropTypes.string.isRequired,
-    alt: PropTypes.string.isRequired,
-    onClose: PropTypes.func.isRequired,
+export const Modal = ({ children, onClose }) => {
+  useEffect(() => {
+    setBodyStyles();
+
+    const handleEscClose = event => {
+      if (event.code === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscClose);
+    return () => {
+      removeBodyStyles();
+      window.removeEventListener('keydown', handleEscClose);
+    };
+  }, [onClose]);
+
+  const handleClose = event => {
+    if (event.target === event.currentTarget) onClose();
   };
 
-  componentDidMount() {
-    this.setBodyStyles();
-    window.addEventListener('keydown', this.handleEscClose);
-  }
+  return (
+    <OverlayStyled onClick={handleClose}>
+      <ModalStyled>{children}</ModalStyled>
+    </OverlayStyled>
+  );
+};
 
-  componentWillUnmount() {
-    this.removeBodyStyles();
-    window.removeEventListener('keydown', this.handleEscClose);
-  }
+Modal.propTypes = {
+  onClose: PropTypes.func.isRequired,
+};
 
-  handleEscClose = event => {
-    if (event.code === 'Escape') {
-      this.props.onClose();
-    }
-  };
+function setBodyStyles() {
+  const { clientWidth } = document.documentElement; // Ширина вьюпорта
+  const { innerWidth } = window; // Внутрішня ширина вікна
 
-  handleClose = event => {
-    if (event.target === event.currentTarget) this.props.onClose();
-  };
-
-  setBodyStyles = () => {
-    const { clientWidth } = document.documentElement; // Ширина вьюпорта
-    const { innerWidth } = window; // Внутрішня ширина вікна
-
-    const scrollWidth = innerWidth - clientWidth;
-    //Якщо є скрол - додаємо падінг праворуч
-    if (scrollWidth) {
-      document.body.setAttribute(
-        'style',
-        `overflow: hidden; padding-right: ${scrollWidth}px;`
-      );
-      return;
-    }
-    //Якщо немає - не додаємо падінг праворуч
-    document.body.setAttribute('style', 'overflow: hidden;');
-  };
-
-  removeBodyStyles = () => {
-    document.body.removeAttribute('style');
-  };
-
-  render() {
-    const { src, alt } = this.props;
-    return (
-      <OverlayStyled onClick={this.handleClose}>
-        <ModalStyled>
-          <img src={src} alt={alt} />
-        </ModalStyled>
-      </OverlayStyled>
+  const scrollWidth = innerWidth - clientWidth;
+  //Якщо є скрол - додаємо падінг праворуч
+  if (scrollWidth) {
+    document.body.setAttribute(
+      'style',
+      `overflow: hidden; padding-right: ${scrollWidth}px;`
     );
+    return;
   }
+  //Якщо немає - не додаємо падінг праворуч
+  document.body.setAttribute('style', 'overflow: hidden;');
+}
+
+function removeBodyStyles() {
+  document.body.removeAttribute('style');
 }

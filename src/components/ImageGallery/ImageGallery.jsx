@@ -2,7 +2,7 @@ import { PropTypes } from 'prop-types';
 import { ImageGalleryListStyled } from './ImageGallery.styled';
 import { ImageGalleryItem } from './ImageGalleryItem';
 
-export const ImageGallery = ({ images, onOpen }) => {
+export const ImageGallery = ({ images }) => {
   return (
     <ImageGalleryListStyled>
       {/* Набір <li> із зображеннями */}
@@ -13,7 +13,6 @@ export const ImageGallery = ({ images, onOpen }) => {
             src={webformatURL}
             alt={tags}
             largeImageURL={largeImageURL}
-            onOpen={onOpen}
           />
         );
       })}
@@ -30,5 +29,4 @@ ImageGallery.propTypes = {
       largeImageURL: PropTypes.string.isRequired,
     })
   ),
-  onOpen: PropTypes.func,
 };
