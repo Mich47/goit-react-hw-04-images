@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { STATUS } from 'constants/status.constants';
 import { getPosts } from 'services/posts.service';
 import { Searchbar } from './Searchbar';
@@ -15,7 +17,6 @@ export const App = () => {
   const totalPages = useRef(0);
 
   useEffect(() => {
-    console.log('useEffect ');
     if (firstStart.current) {
       firstStart.current = false;
       return;
@@ -38,6 +39,12 @@ export const App = () => {
       const data = await getPosts(params);
       const { hits, total, totalHits } = data;
 
+      if (!total) {
+        toast.warn("Sorry, we couldn't find any matches. Please try again.");
+        setStatus(STATUS.idle);
+        return;
+      }
+
       //Визначаємо кількість картинок у запиті
       let perPage = 20;
       if (params.per_page) {
@@ -51,6 +58,16 @@ export const App = () => {
       totalPages.current =
         totalHits === total ? Math.ceil(total / perPage) : totalHits;
 
+      if (page === 1 && total) {
+        toast.success(`Hooray! We found ${total} images.`);
+      }
+
+      if (page === totalPages.current) {
+        toast.info(
+          "We're sorry, but you've reached the end of search results."
+        );
+      }
+
       setImages(prev => [
         ...prev,
         ...hits.map(({ id, largeImageURL, tags, webformatURL }) => ({
@@ -63,7 +80,7 @@ export const App = () => {
 
       setStatus(STATUS.success);
     } catch (error) {
-      console.log('error ->', error);
+      toast.error('Oops! Something went wrong. Please try again.');
       setStatus(STATUS.error);
     }
   };
@@ -104,7 +121,8 @@ export const App = () => {
       {page < totalPages.current && status === STATUS.success && (
         <Button onClick={handleLoadMore}>Load more</Button>
       )}
-      <Loader status={status} />
+      {status === STATUS.loading && <Loader />}
+      <ToastContainer />
     </>
   );
 };

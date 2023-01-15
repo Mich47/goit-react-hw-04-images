@@ -31,7 +31,7 @@ export const Searchbar = ({ onSubmitForm, status }) => {
         <ButtonIconStyled
           type="submit"
           left={0}
-          disabled={status !== STATUS.success && status !== STATUS.idle}
+          disabled={status === STATUS.loading}
         >
           <IoSearchOutline />
         </ButtonIconStyled>
